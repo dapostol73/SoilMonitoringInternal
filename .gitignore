@@ -28,3 +28,9 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Local build paths
+.pio/
+.reference/
+.vscode/
+.temp/
