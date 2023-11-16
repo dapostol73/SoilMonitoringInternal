@@ -1,4 +1,4 @@
-#include <Arduino.h>
+
 /*********************************************************************
   This is an example for our Monochrome OLEDs based on SH110X drivers
 
@@ -16,10 +16,10 @@
   i2c SH1106 modified by Rupert Hirst  12/09/21
 *********************************************************************/
 
-
-
+#include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <WiFiEspAT.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 
@@ -116,10 +116,11 @@ void setup() {
 void loop() {
 	sensorVal1 = analogRead(SOILMOISTURE_PIN1);
 	sensorVal1 = map(sensorVal1, SOILMOISTURE_MIN1, SOILMOISTURE_MAX1, 0, 100);
+	sensorVal1 = max(min(sensorVal1, 100), 0);
 	drawPercentageBar(sensorVal1, 0);
-	display.setTextSize(6);
+	display.setTextSize(4);
 	display.setTextColor(SH110X_WHITE);
-	display.setCursor(24, 8);
+	display.setCursor(24, 16);
 	display.print(sensorVal1);
 	display.display();
 	delay(500);
