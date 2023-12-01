@@ -19,9 +19,13 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <SoftwareSerial.h>
 #include <WiFiEspAT.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
+
+#define ESP_RESET 5 
+SoftwareSerial espSerial(3, 2);  // rx, tx
 
 /* Uncomment the initialize the I2C address , uncomment only one, If you get a totally blank screen try the other*/
 #define i2c_Address 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
@@ -72,48 +76,57 @@ void drawPercentageBar(int value, int x, int y = 0) {
 	}
 }
 
-void setup() {
-	Serial.begin(9600);
+// free RAM check for debugging. SRAM for ATmega328p = 2048Kb.
+int availableMemory() {
+    // Use 1024 with ATmega168
+    int size = 2048;
+    byte *buf;
+    while ((buf = (byte *) malloc(--size)) == NULL);
+        free(buf);
+    return size;
+}
 
+void setup() {
+	Serial.begin(115200);
+	Serial.println("Program Started!");
+	Serial.println(availableMemory());
+
+	espSerial.begin(115200);
+	Serial.println(availableMemory());
+	delay(1000);
+	WiFi.init(&espSerial, ESP_RESET);
+	Serial.println(availableMemory());
+	//WiFi.endAP(true);
+	WiFi.setAutoConnect(true);
+	WiFi.setPersistent(false);
+
+	if (WiFi.status() == WL_NO_SHIELD)
+	{
+		Serial.println("Communication with WiFi module failed!");
+	}
+	Serial.println("Communication with WiFi module succeeded!");
+	Serial.println(availableMemory());
+	
 	// Show image buffer on the display hardware.
 	// Since the buffer is intialized with an Adafruit splashscreen
 	// internally, this will display the splashscreen.
 
 	delay(250); // wait for the OLED to power up
 	display.begin(i2c_Address, true); // Address 0x3C default
+	Serial.println(availableMemory());
 	display.setRotation(1);
-	//display.setContrast (0); // dim display
+	Serial.println(availableMemory());
+	Serial.println("Initializing SH1107 oled display!");
 
 	display.display();
 	delay(2000);
 	// Clear the buffer.
 	display.clearDisplay();
-
-	/*
-	// draw the first ~12 characters in the font
-	testdrawchar();
-	display.display();
-	delay(2000);
-	display.clearDisplay();
-
-	// text display tests
-	display.setTextSize(1);
-	display.setTextColor(SH110X_WHITE);
-	display.setCursor(0, 0);
-	display.println("Failure is always an option");
-	display.setTextColor(SH110X_BLACK, SH110X_WHITE); // 'inverted' text
-	display.println(3.141592);
-	display.setTextSize(2);
-	display.setTextColor(SH110X_WHITE);
-	display.print("0x"); display.println(0xDEADBEEF, HEX);
-	display.display();
-	delay(2000);
-	display.clearDisplay();
-	*/
 }
 
 
 void loop() {
+	return;
 	sensorVal1 = analogRead(SOILMOISTURE_PIN1);
 	sensorVal1 = map(sensorVal1, SOILMOISTURE_MIN1, SOILMOISTURE_MAX1, 0, 100);
 	sensorVal1 = max(min(sensorVal1, 100), 0);
@@ -125,5 +138,5 @@ void loop() {
 	display.display();
 	delay(500);
 	display.clearDisplay();
-	//Serial.println(sensorVal1);
+	Serial.println(sensorVal1);
 }
