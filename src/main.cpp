@@ -17,15 +17,9 @@
 *********************************************************************/
 
 #include <Arduino.h>
-#include <SPI.h>
 #include <Wire.h>
-#include <SoftwareSerial.h>
-#include <WiFiEspAT.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
-
-#define ESP_RESET 5 
-SoftwareSerial espSerial(3, 2);  // rx, tx
 
 /* Uncomment the initialize the I2C address , uncomment only one, If you get a totally blank screen try the other*/
 #define i2c_Address 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
@@ -36,107 +30,47 @@ SoftwareSerial espSerial(3, 2);  // rx, tx
 #define OLED_RESET -1   //   QT-PY / XIAO
 Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define SOILMOISTURE_PIN1 0
-#define SOILMOISTURE_MIN1 510
-#define SOILMOISTURE_MAX1 210
 
-int sensorVal1;
+#define BUILTIN_LED PC13
 
-void testdrawchar(void)
+void setup()
 {
-	display.setTextSize(1);
-	display.setTextColor(SH110X_WHITE);
-	display.setCursor(0, 0);
+    Serial.begin(115200);
+    // initialize digital pin PB2 as an output.
+    pinMode(BUILTIN_LED, OUTPUT);
 
-	for (uint8_t i = 0; i < 168; i++) {
-	if (i == '\n') continue;
-		display.write(i);
-	if ((i > 0) && (i % 21 == 0))
-		display.println();
-	}
-	display.display();
-	delay(1);
+    delay(250); // wait for the OLED to power up
+    display.begin(i2c_Address, true); // Address 0x3C default
+    //display.setContrast (0); // dim display
+
+    display.display();
+    delay(1000);
+    display.invertDisplay(true);
+    delay(1000);
+    display.invertDisplay(false);
+    delay(1000);
+    display.clearDisplay();
+    display.display();
+    
+    display.setRotation(1);
+    display.setTextSize(1);
+    display.setTextColor(SH110X_WHITE);
+    display.setCursor(0, 0);
+    display.println("Setup complete!");
+    display.display();
+
+    Serial.println("Setup complete!");
 }
 
-void drawPercentageBar(int value, int x, int y = 0) {
-	const int height = 5;
-	const int width = 16;
-	const int spacing = 1;
-	const int offset = 3;
-	const int bars = 10;
-	y += offset;
-	for (int i=0; i < bars; i++) {
-		if ((bars-i)*10-5 > value) {
-			display.drawRoundRect(x, y, width, height, 1, SH110X_WHITE);
-		}
-		else {
-			display.fillRoundRect(x, y, width, height, 1, SH110X_WHITE);
-		}
-		y += height + spacing;
-	}
-}
+void loop()
+{
 
-// free RAM check for debugging. SRAM for ATmega328p = 2048Kb.
-int availableMemory() {
-    // Use 1024 with ATmega168
-    int size = 2048;
-    byte *buf;
-    while ((buf = (byte *) malloc(--size)) == NULL);
-        free(buf);
-    return size;
-}
-
-void setup() {
-	Serial.begin(115200);
-	Serial.println("Program Started!");
-	Serial.println(availableMemory());
-
-	espSerial.begin(115200);
-	Serial.println(availableMemory());
-	delay(1000);
-	WiFi.init(&espSerial, ESP_RESET);
-	Serial.println(availableMemory());
-	//WiFi.endAP(true);
-	WiFi.setAutoConnect(true);
-	WiFi.setPersistent(false);
-
-	if (WiFi.status() == WL_NO_SHIELD)
-	{
-		Serial.println("Communication with WiFi module failed!");
-	}
-	Serial.println("Communication with WiFi module succeeded!");
-	Serial.println(availableMemory());
-	
-	// Show image buffer on the display hardware.
-	// Since the buffer is intialized with an Adafruit splashscreen
-	// internally, this will display the splashscreen.
-
-	delay(250); // wait for the OLED to power up
-	display.begin(i2c_Address, true); // Address 0x3C default
-	Serial.println(availableMemory());
-	display.setRotation(1);
-	Serial.println(availableMemory());
-	Serial.println("Initializing SH1107 oled display!");
-
-	display.display();
-	delay(2000);
-	// Clear the buffer.
-	display.clearDisplay();
-}
-
-
-void loop() {
-	return;
-	sensorVal1 = analogRead(SOILMOISTURE_PIN1);
-	sensorVal1 = map(sensorVal1, SOILMOISTURE_MIN1, SOILMOISTURE_MAX1, 0, 100);
-	sensorVal1 = max(min(sensorVal1, 100), 0);
-	drawPercentageBar(sensorVal1, 0);
-	display.setTextSize(4);
-	display.setTextColor(SH110X_WHITE);
-	display.setCursor(24, 16);
-	display.print(sensorVal1);
-	display.display();
-	delay(500);
-	display.clearDisplay();
-	Serial.println(sensorVal1);
+    digitalWrite(BUILTIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(100);               // wait for 100mS
+    digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
+    delay(100);               // wait for 100mS
+    digitalWrite(BUILTIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(250);               // wait for 100mS
+    digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
+    delay(250);               // wait for 100mS
 }
