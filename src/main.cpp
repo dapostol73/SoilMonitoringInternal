@@ -32,12 +32,14 @@ Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OL
 
 
 #define BUILTIN_LED PC13
+#define MS_SENSOR0 PA0
 
 void setup()
 {
     Serial.begin(115200);
     // initialize digital pin PB2 as an output.
     pinMode(BUILTIN_LED, OUTPUT);
+    pinMode(MS_SENSOR0, INPUT);
 
     delay(250); // wait for the OLED to power up
     display.begin(i2c_Address, true); // Address 0x3C default
@@ -69,8 +71,33 @@ void loop()
     delay(100);               // wait for 100mS
     digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
     delay(100);               // wait for 100mS
-    digitalWrite(BUILTIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(250);               // wait for 100mS
-    digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
-    delay(250);               // wait for 100mS
+
+    int mois = analogRead(MS_SENSOR0);
+
+    Serial.print(mois);
+
+    display.clearDisplay();
+    display.display();
+    display.setCursor(0, 0);
+
+    if(mois >= 1000)
+    {
+        display.println("Sensor is not in the Soil or DISCONNECTED");
+    }
+    else if (mois >= 600)
+    {
+        display.println("Soil is DRY");
+    }
+    else if(mois >= 370)
+    {
+        display.println("Soil is HUMID"); 
+    }
+    else
+    {
+        display.println("Sensor in WATER");
+    }
+
+    display.println(mois);
+    display.display();
+    delay(2000);
 }
