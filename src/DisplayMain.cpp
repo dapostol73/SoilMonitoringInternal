@@ -13,6 +13,7 @@ void DisplayMain::init()
 void DisplayMain::clearDisplay()
 {
     DisplayGFX->fillScreen(BACKGROUND_COLOR);
+	printLineReset();
 }
 
 /// @brief Default size when set to 1 is 12x12

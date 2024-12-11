@@ -10,8 +10,9 @@
 #define TFT_RST 41 // 6
 #define TFT_DC 40 // 7
 #define TFT_MOSI 39 // 11 or 35 (FSPI D)
-#define TFT_SCLK 38 // 12 or 36 (FSPI CLK)
-#define TFT_MISO 37 // 13 or 37 (FSPI Q)
+#define TFT_SCLK 21 // 12 or 36 (FSPI CLK)
+#define TFT_MISO 20 // 13 or 37 (FSPI Q)
+// Use pins in range 0-31
 
 #define BITS_PER_PIXEL 2 // 2^2 =  4 colors
 #define BIT_MASK ((1 << BITS_PER_PIXEL) - 1)

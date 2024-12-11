@@ -15,8 +15,11 @@ void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont)
     DisplayGFX->setRotation(rotation);
     m_gfxFontDefault = gfxFont;
     setFont(gfxFont);
-    DisplayGFX->fillScreen(BLACK);
     DisplayGFX->setTextColor(WHITE);
+    DisplayGFX->fillScreen(RED);delay(250);
+    DisplayGFX->fillScreen(GREEN);delay(250);
+    DisplayGFX->fillScreen(BLUE);delay(250);
+    DisplayGFX->fillScreen(BLACK);delay(250);
 }
 
 /// @brief Blend between 2 color based on 255 alpha value
@@ -175,10 +178,10 @@ void DisplayControl::setMaxLines()
     {
         case 1:
         case 3:
-            m_maxLines = floor(480/m_lineHeight);
+            m_maxLines = floor(320/m_lineHeight);
             break;
         default:
-            m_maxLines = floor(800/m_lineHeight);
+            m_maxLines = floor(480/m_lineHeight);
             break;
     } 
 }
