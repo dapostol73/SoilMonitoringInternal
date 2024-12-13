@@ -21,7 +21,7 @@
 #include <WiFi.h>
 
 #include "ApplicationSettings.h"
-#include "displayMain.h"
+#include "DisplayMain.h"
 
 #define SERIAL_LOGGING
 #ifndef SERIAL_LOGGING
@@ -48,63 +48,59 @@ DisplayMain displayMain;
 
 void configureWiFi();
 
-void blinkLed(int times, int interval);
+void blinkLed(uint8_t times, uint8_t interval);
 
-void plotLinear(char *label, int x, int y);
+void plotLinear(const char* label, uint16_t x, uint16_t y);
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD_RATE);
+	while(!Serial);
     // initialize digital pin PB2 as an output.
     pinMode(BUILTIN_LED, OUTPUT);
     pinMode(MS_SENSOR0, INPUT);
 
     delay(250); // wait for the OLED to power up
     displayMain.init();
-	configureWiFi();
-    Serial.println("Setup complete!");
+	//configureWiFi();
 	blinkLed(3, 250);
-	
-	uint8_t d = 64;
-	plotLinear("S0", 0 * d, 64);
-	plotLinear("S1", 1 * d, 64);
-	plotLinear("S2", 2 * d, 64);
-	plotLinear("S3", 3 * d, 64);
-	plotLinear("S4", 4 * d, 64);
-	plotLinear("S5", 5 * d, 64);
+	displayMain.drawMositureMeters(16, 64);
+	Serial.println("Setup complete!");
 }
 
 void loop()
 {
     int mois = analogRead(MS_SENSOR0);
 
-	displayMain.DisplayGFX->fillRect(0, 0, 480, 48, BLACK);
+	displayMain.DisplayGFX->fillRect(0, 0, 480, 64, BLACK);
 	displayMain.printLineReset();
 	char info[48] = "";
     if(mois >= 4000)
     {
-		strcmp(info, "Sensor is not in the Soil or DISCONNECTED");
+		strcpy(info, "Sensor is not in the Soil or DISCONNECTED");
     }
     else if (mois >= 2400)
     {
-        strcmp(info, "Soil is DRY");
+        strcpy(info, "Soil is DRY");
     }
     else if(mois >= 1500)
     {
-        strcmp(info, "Soil is HUMID"); 
+        strcpy(info, "Soil is HUMID"); 
     }
     else if(mois >= 50)
     {
-        strcmp(info, "Sensor in WATER");
+        strcpy(info, "Sensor in WATER");
     }
     else
     {
-        strcmp(info, "Sensor in DISCONNECTED?");
+        strcpy(info, "Sensor in DISCONNECTED?");
     }
+
+	uint16_t remap = map(min(max(mois, 1000), 3000), 1000, 3000, 100, 0);
 
 	displayMain.printLine(info);
 	Serial.println(info);
-	
+	displayMain.updateMositureMeters(16, 64, remap);
 	sprintf(info, "Value: %d", mois);
 	displayMain.printLine(info);
 	Serial.println(info);
@@ -112,7 +108,7 @@ void loop()
     delay(2000);
 }
 
-void blinkLed(int times, int interval)
+void blinkLed(uint8_t times, uint8_t interval)
 {
 	for (uint8_t i = 0; i < times; i++)
 	{
@@ -144,9 +140,9 @@ void printConnectInfo()
 	sprintf(ipInfo, "IP address: %u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
 
     displayMain.clearDisplay();
-    displayMain.printLine(ssidInfo);
-    displayMain.printLine(macInfo);
-    displayMain.printLine(ipInfo);
+	displayMain.printLine(ssidInfo, SUCCESS_COLOR);
+	displayMain.printLine(ipInfo, TEXT_MAIN_COLOR);
+	displayMain.printLine(macInfo, TEXT_MAIN_COLOR);
 
 	#ifdef SERIAL_LOGGING
 	Serial.println(ssidInfo);
@@ -205,7 +201,6 @@ void resolveAppSettings()
 bool connectToWiFi(uint8_t retries)
 {
 	String scanMsg = "Scanning for WiFi SSID.";
-    displayMain.clearDisplay();
     displayMain.printLine(scanMsg);
 	#ifdef SERIAL_LOGGING
 	Serial.println(scanMsg);
@@ -277,16 +272,10 @@ void configureWiFi()
 	Serial.println(intialMsg);
 	#endif
 
-	displayMain.printLine("Setting mode...");
-	//WiFi.begin("a12studios", "apollo1973");
 	WiFi.mode(WIFI_MODE_STA);
-	delay(5000);
-	displayMain.printLine("Disconnecting...");
+	delay(1000);
 	WiFi.disconnect();
-	//WiFi.endAP(true);
-	
-	//WiFi.setAutoConnect(true);
-	//WiFi.setPersistent(false);
+	WiFi.setAutoConnect(true);
 
 	if (WiFi.status() == WL_NO_SHIELD)
 	{
@@ -309,31 +298,4 @@ void configureWiFi()
 		
 	printConnectInfo();
 	delay(2000);
-}
-
-
-// #########################################################################
-//  Draw a linear meter on the screen
-// #########################################################################
-void plotLinear(char *label, int x, int y)
-{
-    int w = 60;
-    displayMain.DisplayGFX->drawRect(x+1, y, w, 256, GRAY);
-    displayMain.DisplayGFX->fillRect(x+3, y + 24, w-3, 256 - 48, WHITE);
-
-    displayMain.drawString(label, x + 32, y + 12, TEXT_CENTER_MIDDLE, CYAN);
-
-    for (int i = 0; i < 11; i ++)
-    {
-        displayMain.DisplayGFX->drawFastHLine(x + 32, y + 38 + (i*18), 16, BLACK);
-    }
-
-    for (int i = 0; i < 3; i ++)
-    {
-        displayMain.DisplayGFX->drawFastHLine(x + 32, y + 38 + (i*90), 24, BLACK);
-    }
-
-    displayMain.DisplayGFX->fillTriangle(x + 6, y + 218 + 8, x + 6 + 20, y + 218, x + 6, y + 218 - 8, RED);
-
-	displayMain.drawString("---", x + 32, y + 256 - 12, TEXT_CENTER_MIDDLE, CYAN);
 }

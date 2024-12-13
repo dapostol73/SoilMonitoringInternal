@@ -4,7 +4,7 @@ DisplayControl::DisplayControl()
 {
 }
 
-void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont)
+void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont, uint16_t foregroundColor, uint16_t backgroundColor)
 {
     if (!DisplayGFX->begin())
     {
@@ -15,11 +15,13 @@ void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont)
     DisplayGFX->setRotation(rotation);
     m_gfxFontDefault = gfxFont;
     setFont(gfxFont);
-    DisplayGFX->setTextColor(WHITE);
-    DisplayGFX->fillScreen(RED);delay(250);
-    DisplayGFX->fillScreen(GREEN);delay(250);
-    DisplayGFX->fillScreen(BLUE);delay(250);
-    DisplayGFX->fillScreen(BLACK);delay(250);
+    DisplayGFX->setTextColor(foregroundColor);
+    DisplayGFX->fillScreen(backgroundColor);
+}
+
+int16_t DisplayControl::clamp(int16_t value, int16_t minimum, int16_t maximum)
+{
+    return min(max(value, minimum), maximum);
 }
 
 /// @brief Blend between 2 color based on 255 alpha value
@@ -27,7 +29,7 @@ void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont)
 /// @param bg 565 color for 255 alpha
 /// @param alpha value between 0-255
 /// @return 
-uint16_t DisplayControl::colorLerp(uint16_t fg, uint16_t bg, int8_t alpha) 
+uint16_t DisplayControl::colorLerp(uint16_t fg, uint16_t bg, uint8_t alpha) 
 {
     uint8_t fg_r = (fg >> 8) & 0b11111000;
     uint8_t fg_g = (fg >> 3) & 0b11111100;
@@ -37,12 +39,10 @@ uint16_t DisplayControl::colorLerp(uint16_t fg, uint16_t bg, int8_t alpha)
     uint8_t bg_g = (bg >> 3) & 0b11111100;
     uint8_t bg_b = (bg << 3) & 0b11111000;
 
-    uint8_t r = (fg_r * alpha + bg_r * (255-alpha)) / 255;
-    uint8_t g = (fg_g * alpha + bg_g * (255-alpha)) / 255;
-    uint8_t b = (fg_b * alpha + bg_b * (255-alpha)) / 255;
-
-    //Serial.println(String(r) + ", " + String(g) + ", " + String(b));
-            
+    uint8_t r = (fg_r * (255-alpha) + bg_r * alpha) / 255;
+    uint8_t g = (fg_g * (255-alpha) + bg_g * alpha) / 255;
+    uint8_t b = (fg_b * (255-alpha) + bg_b * alpha) / 255;
+      
     return DisplayGFX->color565(r, g, b);
 }
 
@@ -383,6 +383,34 @@ void DisplayControl::drawFatCircle(int16_t x, int16_t y, int16_t r, int16_t wd, 
         if (rad <= 0) break;
         DisplayGFX->drawCircle(x, y, rad, color);
     }
+}
+
+void DisplayControl::gradientRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t startColor, uint16_t endColor, bool horizontal)
+{
+    uint8_t alpha = 0;
+    uint16_t color = WHITE;
+    DisplayGFX->startWrite();
+    if (horizontal)
+    {
+        for (int16_t i = 0; i <= w; i++)
+        {
+            alpha = min(255 * (1.0 * i / w), 255.0);
+            color = colorLerp(startColor, endColor, alpha);
+            DisplayGFX->writeFastVLine(x+i, y, h, color);
+        }
+    }
+    else
+    {
+        for (int16_t i = 0; i <= h; i++)
+        {
+            alpha = min(255 * (1.0 * i / h), 255.0);
+            Serial.println(alpha);
+            color = colorLerp(startColor, endColor, alpha);
+            Serial.println(color);
+            DisplayGFX->writeFastHLine(x, y+i, w, color);
+        }
+    }
+    DisplayGFX->endWrite();
 }
 
 void DisplayControl::drawChar(int16_t x, int16_t y, char c, TextAlignment verticalAlign, uint16_t foregroundColor)

@@ -10,8 +10,8 @@
 #define TFT_RST 41 // 6
 #define TFT_DC 40 // 7
 #define TFT_MOSI 39 // 11 or 35 (FSPI D)
-#define TFT_SCLK 21 // 12 or 36 (FSPI CLK)
-#define TFT_MISO 20 // 13 or 37 (FSPI Q)
+#define TFT_SCLK 47 // 12 or 36 (FSPI CLK)
+#define TFT_MISO 21 // 13 or 37 (FSPI Q)
 // Use pins in range 0-31
 
 #define BITS_PER_PIXEL 2 // 2^2 =  4 colors
@@ -28,10 +28,11 @@
 #define GRAY 0x8410
 #define WHITE 0xFFFF
 #define BLUE 0x001F
-#define GREEN 0x07E0
-#define RED 0xF800
 #define CYAN 0x07FF
+#define GREEN 0x07E0
 #define YELLOW 0xFFE0
+#define ORANGE 0xFD20
+#define RED 0xF800
 #define PURPLE 0x780F
 
 enum FrameState
@@ -109,9 +110,11 @@ class DisplayControl
 		DisplayControl();
 		/// @brief 
 		/// @param rotation 0,1,2,3 = (0,90,180,270)
-		void init(uint16_t rotation, const GFXfont *gfxFont);
+		void init(uint16_t rotation, const GFXfont *gfxFont, uint16_t foregroundColor = WHITE, uint16_t backgroundColor = BLACK);
 
-		uint16_t colorLerp(uint16_t fg, uint16_t bg, int8_t alpha);
+		int16_t clamp(int16_t value, int16_t minimum, int16_t maximum);
+		
+		uint16_t colorLerp(uint16_t fg, uint16_t bg, uint8_t alpha);
 
 		uint16_t color565(RGBColor color);
 
@@ -160,6 +163,8 @@ class DisplayControl
 		void drawFatLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t wd, uint16_t color);
 
 		void drawFatCircle(int16_t x, int16_t y, int16_t r, int16_t wd, uint16_t color);
+
+		void gradientRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t startColor = WHITE, uint16_t endColor = BLACK, bool horizontal = false);
 
 		void setProgress(DisplayContolProgress *progress);
 
