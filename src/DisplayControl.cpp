@@ -413,7 +413,7 @@ void DisplayControl::gradientRect(int16_t x, int16_t y, int16_t w, int16_t h, ui
     DisplayGFX->endWrite();
 }
 
-void DisplayControl::drawChar(int16_t x, int16_t y, char c, TextAlignment verticalAlign, uint16_t foregroundColor)
+void DisplayControl::drawChar(int16_t x, int16_t y, char c, TextAlignment align, uint16_t foregroundColor)
 {
     int16_t x1, y1 = 0;
     uint16_t w, h, hIng = 0;
@@ -422,7 +422,7 @@ void DisplayControl::drawChar(int16_t x, int16_t y, char c, TextAlignment vertic
     char cArray[2] = { c, '\0' };
     DisplayGFX->getTextBounds("0", 0, y, &x1, &y1, &w, &h);
     DisplayGFX->getTextBounds(cArray, 0, 0, &x1, &y1, &w, &hIng);
-    switch (verticalAlign)
+    switch (align)
     {
         case TEXT_LEFT_TOP:
             y += h;
