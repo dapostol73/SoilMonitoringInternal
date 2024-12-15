@@ -43,15 +43,18 @@ ApplicationSettings appSettings; //change to pointer
 DisplayMain displayMain;
 
 const uint8_t SENSORS_COUNT = 8;
-SensorData sensorData[SENSORS_COUNT];
-const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 };
 const uint16_t SENSORS_VALUE_MAX = 2950;
 const uint16_t SENSORS_VALUE_MIN = 1250;
+const uint16_t SENSORS_UPDATE_SECS = 1; // Sensor query every minute
+const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 };
+SensorData sensorData[SENSORS_COUNT];
+long sensorTimeLastUpdate = LONG_MIN;
 
 /* Uncomment the initialize the I2C address , uncomment only one, If you get a totally blank screen try the other*/
 #define i2c_Address 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
 //#define i2c_Address 0x3d //initialize with the I2C addr 0x3D Typically Adafruit OLED's
 
+int16_t clamp(int16_t value, int16_t minimum, int16_t maximum);
 void blinkLed(uint8_t times, uint8_t interval);
 void configureWiFi();
 void configureSensors();
@@ -74,8 +77,34 @@ void setup()
 
 void loop()
 {
-    updateSensors();
-    delay(2000);
+    if (millis() - sensorTimeLastUpdate > (1000L*SENSORS_UPDATE_SECS))
+    {
+        #ifdef SERIAL_LOGGING
+        Serial.println("Setting updateCurrentWeather to true");
+        #endif
+        updateSensors();
+        sensorTimeLastUpdate = millis();
+    }
+
+    TouchPoint touch = displayMain.DisplayTouch->getTouch();
+
+	// Display touches that have a pressure value (Z)
+	if (touch.zRaw != 0)
+    {
+        #ifdef SERIAL_LOGGING
+        Serial.print("Touch at X: ");
+        Serial.print(touch.x);
+        Serial.print(", Y: ");
+        Serial.println(touch.y);
+        #endif
+        char info[48] = "";
+        sprintf(info, "Last Touch at X: %d Y: %d", touch.x, touch.y);
+        displayMain.DisplayGFX->fillRect(0, 0, 480, 32, BACKGROUND_COLOR);
+        displayMain.drawString(info, 4, 4, TEXT_LEFT_TOP, TEXT_MAIN_COLOR);
+		//uint16_t x = clamp(touch.x, 5, 475);
+		//uint16_t y = clamp(touch.y, 5, 315);
+		//displayMain.DisplayGFX->fillCircle(x, y, 4, GREEN);
+    }
 }
 
 int16_t clamp(int16_t value, int16_t minimum, int16_t maximum)
@@ -130,9 +159,9 @@ void updateSensors()
         {
             strcpy(info, "Sensor in DISCONNECTED?");
         }
-        Serial.println(info);
+        //Serial.println(info);
         sprintf(info, "Value: %d", mois);
-        Serial.println(info);
+        //Serial.println(info);
         #endif
     }
 }

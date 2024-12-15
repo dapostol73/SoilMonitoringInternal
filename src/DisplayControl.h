@@ -3,16 +3,25 @@
 
 #define DISABLE_COLOR_DEFINES
 #include <Arduino.h>
-#include <Arduino_GFX_Library.h>
 #include <gfxfont.h>
+#include <Arduino_GFX_Library.h>
+#include <XPT2046_Bitbang.h>
 
-#define TFT_CS 42 // 10 or 34 (FSPI CS0)
+#define TFT_CS 10 // 10 or 34 (FSPI CS0)
 #define TFT_RST 41 // 6
-#define TFT_DC 40 // 7
-#define TFT_MOSI 39 // 11 or 35 (FSPI D)
-#define TFT_SCLK 47 // 12 or 36 (FSPI CLK)
-#define TFT_MISO 21 // 13 or 37 (FSPI Q)
+#define TFT_DC 42 // 7
+#define TFT_MOSI 11 // 11 or 35 (FSPI D) T_DIN
+#define TFT_SCLK 12 // 12 or 36 (FSPI CLK) T_CLK
+#define TFT_MISO 13 // 13 or 37 (FSPI Q) T_DO
+#define TCH_MOSI 35 // 11 or 35 (FSPI D) T_DIN
+#define TCH_SCLK 36 // 12 or 36 (FSPI CLK) T_CLK
+#define TCH_MISO 37 // 13 or 37 (FSPI Q) T_DO
+#define TCH_CS 47 // T_CS
+#define TCH_IRQ 9 // T_IRQ
 // Use pins in range 0-31
+
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 320
 
 #define BITS_PER_PIXEL 2 // 2^2 =  4 colors
 #define BIT_MASK ((1 << BITS_PER_PIXEL) - 1)
@@ -106,6 +115,7 @@ class DisplayControl
 	public:
 		/* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
 		Arduino_GFX *DisplayGFX = new Arduino_ST7796(bus, TFT_RST, 3 /* rotation */, false /* IPS */);
+		XPT2046_Bitbang *DisplayTouch = new XPT2046_Bitbang(TCH_MOSI, TCH_MISO, TCH_SCLK, TCH_CS, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 		DisplayControl();
 		/// @brief 

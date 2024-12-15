@@ -6,12 +6,14 @@ DisplayControl::DisplayControl()
 
 void DisplayControl::init(uint16_t rotation, const GFXfont *gfxFont, uint16_t foregroundColor, uint16_t backgroundColor)
 {
+    
     if (!DisplayGFX->begin())
     {
-        Serial.println("gfx->begin() failed!");
+        Serial.println("DisplayGFX->begin() failed!");
         return;
     }
-
+    DisplayTouch->begin();
+    
     DisplayGFX->setRotation(rotation);
     m_gfxFontDefault = gfxFont;
     setFont(gfxFont);
@@ -178,10 +180,10 @@ void DisplayControl::setMaxLines()
     {
         case 1:
         case 3:
-            m_maxLines = floor(320/m_lineHeight);
+            m_maxLines = floor(SCREEN_HEIGHT/m_lineHeight);
             break;
         default:
-            m_maxLines = floor(480/m_lineHeight);
+            m_maxLines = floor(SCREEN_WIDTH/m_lineHeight);
             break;
     } 
 }
