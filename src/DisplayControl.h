@@ -112,6 +112,8 @@ class DisplayControl
 		const GFXfont *m_gfxFontDefault;
 		const GFXfont *m_gfxFontTemp;
 
+		int16_t clamp(int16_t value, int16_t minimum, int16_t maximum);
+		
 	public:
 		/* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
 		Arduino_GFX *DisplayGFX = new Arduino_ST7796(bus, TFT_RST, 3 /* rotation */, false /* IPS */);
@@ -122,8 +124,6 @@ class DisplayControl
 		/// @param rotation 0,1,2,3 = (0,90,180,270)
 		void init(uint16_t rotation, const GFXfont *gfxFont, uint16_t foregroundColor = WHITE, uint16_t backgroundColor = BLACK);
 
-		int16_t clamp(int16_t value, int16_t minimum, int16_t maximum);
-		
 		uint16_t colorLerp(uint16_t fg, uint16_t bg, uint8_t alpha);
 
 		uint16_t color565(RGBColor color);

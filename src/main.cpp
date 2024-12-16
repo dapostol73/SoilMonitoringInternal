@@ -24,7 +24,7 @@
 #include "DisplayMain.h"
 #include "SensorData.h"
 
-#define SERIAL_LOGGING
+//#define SERIAL_LOGGING
 #ifndef SERIAL_LOGGING
 // disable Serial output
 #define Serial KillDefaultSerial
@@ -43,8 +43,6 @@ ApplicationSettings appSettings; //change to pointer
 DisplayMain displayMain;
 
 const uint8_t SENSORS_COUNT = 8;
-const uint16_t SENSORS_VALUE_MAX = 2950;
-const uint16_t SENSORS_VALUE_MIN = 1250;
 const uint16_t SENSORS_UPDATE_SECS = 1; // Sensor query every minute
 const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 };
 SensorData sensorData[SENSORS_COUNT];
@@ -63,7 +61,10 @@ void updateSensors();
 void setup()
 {
     Serial.begin(SERIAL_BAUD_RATE);
-	while(!Serial);
+	#ifdef SERIAL_LOGGING
+		while(!Serial);
+	#endif
+	
     // initialize digital pin PB2 as an output.
     pinMode(BUILTIN_LED, OUTPUT);
 
@@ -107,22 +108,12 @@ void loop()
     }
 }
 
-int16_t clamp(int16_t value, int16_t minimum, int16_t maximum)
-{
-    return min(max(value, minimum), maximum);
-}
-
 void configureSensors()
 {
     uint16_t w = 60;
     for (uint16_t i = 0; i < SENSORS_COUNT; i++)
     {
-        sensorData[i].Pin = sensorPins[i];
-        sprintf(sensorData[i].Label, "S%d" , i+1);
-        sensorData[i].Index = i;
-        sensorData[i].X = (i * w);
-        sensorData[i].Y = 32;
-        pinMode(sensorData[i].Pin, INPUT);
+		sensorData[i].init(sensorPins[i], i, (i * w), 32);
         displayMain.updateMositureMeter(&sensorData[i], true);
     }
 }
@@ -131,38 +122,8 @@ void updateSensors()
 {
     for (uint16_t i = 0; i < SENSORS_COUNT; i++)
     {
-        int mois = analogRead(sensorData[i].Pin);
-        sensorData[i].Connected = mois > 1000;
-        sensorData[i].PreviousValue = sensorData[i].CurrentValue;
-        sensorData[i].CurrentValue = map(clamp(mois, SENSORS_VALUE_MIN, SENSORS_VALUE_MAX), SENSORS_VALUE_MIN, SENSORS_VALUE_MAX, 100, 0);
+        sensorData[i].readValue();
         displayMain.updateMositureMeter(&sensorData[i]);
-
-        #ifdef SERIAL_LOGGING
-        char info[48] = "";
-        if(mois >= 4000)
-        {
-            strcpy(info, "Sensor is not in the Soil or DISCONNECTED");
-        }
-        else if (mois >= 2400)
-        {
-            strcpy(info, "Soil is DRY");
-        }
-        else if(mois >= 1500)
-        {
-            strcpy(info, "Soil is HUMID"); 
-        }
-        else if(mois >= 50)
-        {
-            strcpy(info, "Sensor in WATER");
-        }
-        else
-        {
-            strcpy(info, "Sensor in DISCONNECTED?");
-        }
-        //Serial.println(info);
-        sprintf(info, "Value: %d", mois);
-        //Serial.println(info);
-        #endif
     }
 }
 
@@ -175,7 +136,7 @@ void blinkLed(uint8_t times, uint8_t interval)
         digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
         delay(interval);               // wait for 100mS
     }
-    }
+}
 
 void printConnectInfo()
 {
