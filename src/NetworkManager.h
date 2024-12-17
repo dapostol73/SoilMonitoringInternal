@@ -4,17 +4,22 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
-#include "WiFiConnection.h"
+#include "ApplicationSettings.h"
 
 class NetworkManager
 {
     private:
-        WiFiConnection* wifiOptions;
-        uint16_t numberOptions = 0;
+        WiFiConnection wiFiConnection;
+        ApplicationSettings* appSettings;
+        uint16_t numOfSettings = 0;
+
+        void scanWiFiSettings();
 
     public:
         NetworkManager();
-        void init(WiFiConnection* wifiSelections, uint16_t selectionSize);
+        bool init(ApplicationSettings* aSettings, uint16_t nSettings);
+        bool connectWiFi(uint16_t retryAttempts = 2, uint16_t retryDelay = 20);
+        bool isConnected();
 };
 
 #endif

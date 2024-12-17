@@ -108,3 +108,34 @@ void DisplayMain::drawWiFiSignal(int16_t x, int16_t y, int16_t size, uint16_t ba
 		}		
 	}
 }
+
+void DisplayMain::printWiFiInfo()
+{
+	// get your MAC address
+	byte mac[6];
+	WiFi.macAddress(mac);
+	IPAddress ip = WiFi.localIP();
+	
+	// SSID
+	char ssidInfo[34] = "";
+	sprintf(ssidInfo, "WiFi SSID: %s", WiFi.SSID());
+
+	// MAC address
+	char macInfo[34] = "";
+	sprintf(macInfo, "MAC address: %02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
+
+	// IP address
+	char ipInfo[34] = "";
+	sprintf(ipInfo, "IP address: %u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+
+    clearDisplay();
+    printLine(ssidInfo, SUCCESS_COLOR);
+    printLine(ipInfo, TEXT_MAIN_COLOR);
+    printLine(macInfo, TEXT_MAIN_COLOR);
+    
+	#ifdef SERIAL_LOGGING
+	Serial.println(ssidInfo);
+	Serial.println(ipInfo);	
+	Serial.println(macInfo);
+	#endif
+}

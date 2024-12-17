@@ -21,6 +21,7 @@
 #include <WiFi.h>
 
 #include "UserSettings.h"
+#include "NetworkManager.h"
 #include "DisplayMain.h"
 #include "SensorData.h"
 
@@ -49,13 +50,10 @@ const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 }
 SensorData sensorData[SENSORS_COUNT];
 long sensorTimeLastUpdate = LONG_MIN;
 
-/* Uncomment the initialize the I2C address , uncomment only one, If you get a totally blank screen try the other*/
-#define i2c_Address 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
-//#define i2c_Address 0x3d //initialize with the I2C addr 0x3D Typically Adafruit OLED's
+const uint16_t WIFI_UPDATE_SECS = 120; // wait 2 minutes to reconnect
+long wiFiTimeLastUpdate = LONG_MIN;
 
-int16_t clamp(int16_t value, int16_t minimum, int16_t maximum);
 void blinkLed(uint8_t times, uint8_t interval);
-void configureWiFi();
 void configureSensors();
 void updateSensors();
 
@@ -71,7 +69,10 @@ void setup()
 
     delay(250); // wait for the OLED to power up
     displayMain.init();
-	//configureWiFi();
+	netManager.init(AppSettings, AppSettingsCount);
+	netManager.connectWiFi();
+	displayMain.printWiFiInfo();
+    wiFiTimeLastUpdate = millis();
 	configureSensors();
 	blinkLed(3, 250);	
 	Serial.println("Setup complete!");
@@ -79,10 +80,19 @@ void setup()
 
 void loop()
 {
+	if (!netManager.isConnected() && millis() - wiFiTimeLastUpdate > (1000L*WIFI_UPDATE_SECS))
+    {
+        #ifdef SERIAL_LOGGING
+        Serial.println("Attempting to connect to WiFi");
+        #endif
+		netManager.connectWiFi();
+        wiFiTimeLastUpdate = millis();
+    }
+
     if (millis() - sensorTimeLastUpdate > (1000L*SENSORS_UPDATE_SECS))
     {
         #ifdef SERIAL_LOGGING
-        Serial.println("Setting updateCurrentWeather to true");
+        Serial.println("Setting updating Sensor data.");
         #endif
         updateSensors();
         sensorTimeLastUpdate = millis();
@@ -107,6 +117,8 @@ void loop()
 		//uint16_t y = clamp(touch.y, 5, 315);
 		//displayMain.DisplayGFX->fillCircle(x, y, 4, GREEN);
     }
+
+	displayMain.drawWiFiSignal(452, 4, 2);
 }
 
 void configureSensors()
@@ -139,182 +151,3 @@ void blinkLed(uint8_t times, uint8_t interval)
     }
 }
 
-void printConnectInfo()
-{
-	// get your MAC address
-	byte mac[6];
-	WiFi.macAddress(mac);
-	IPAddress ip = WiFi.localIP();
-	
-	// SSID
-	char ssidInfo[34] = "";
-	sprintf(ssidInfo, "WiFi SSID: %s", WiFi.SSID());
-
-	// MAC address
-	char macInfo[34] = "";
-	sprintf(macInfo, "MAC address: %02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
-
-	// IP address
-	char ipInfo[34] = "";
-	sprintf(ipInfo, "IP address: %u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
-
-    displayMain.clearDisplay();
-	displayMain.printLine(ssidInfo, SUCCESS_COLOR);
-	displayMain.printLine(ipInfo, TEXT_MAIN_COLOR);
-	displayMain.printLine(macInfo, TEXT_MAIN_COLOR);
-
-	#ifdef SERIAL_LOGGING
-	Serial.println(ssidInfo);
-	Serial.println(ipInfo);	
-	Serial.println(macInfo);
-	#endif
-}
-
-void resolveAppSettings()
-{
-	int8_t numNetworks = WiFi.scanNetworks();
-	#ifdef SERIAL_LOGGING
-	Serial.println("Number of networks found: " + String(numNetworks));
-	#endif
-
-	if (numNetworks == 0)
-	{
-		delay(2500);
-		numNetworks = WiFi.scanNetworks();
-	}
-
-	for (uint8_t i=0; i<numNetworks; i++)
-	{
-		String ssid = WiFi.SSID(i);
-		#ifdef SERIAL_LOGGING
-		Serial.println(ssid + " (" + String(WiFi.RSSI(i)) + ")");
-		#endif
-		for (uint8_t j=0; j < AppSettingsCount; j++)
-		{
-			const char* appSsid = AppSettings[j].WifiSettings.SSID;
-			#ifdef SERIAL_LOGGING
-			Serial.println("Checking: " + String(appSsid));
-			#endif
-			if (strcasecmp(appSsid, ssid.c_str()) == 0)
-			{
-				#ifdef SERIAL_LOGGING
-				Serial.println("Found: " + String(ssid));
-				#endif
-				AppSettings[j].WifiSettings.Avialable = true;
-				AppSettings[j].WifiSettings.Strength = WiFi.RSSI(i);
-
-				if (AppSettings[j].WifiSettings.Strength > appSettings.WifiSettings.Strength)
-				{
-					appSettings = AppSettings[j];
-				}
-			}
-		}
-	}
-
-	#ifdef SERIAL_LOGGING
-	Serial.println("Using WiFi " + String(appSettings.WifiSettings.SSID));
-	#endif
-	WiFi.disconnect();	
-}
-
-bool connectToWiFi(uint8_t retries)
-{
-	String scanMsg = "Scanning for WiFi SSID.";
-    displayMain.printLine(scanMsg);
-	#ifdef SERIAL_LOGGING
-	Serial.println(scanMsg);
-	#endif
-	resolveAppSettings();
-
-    char infoMsg[] = "Waiting for connection to WiFi";
-	if (!appSettings.WifiSettings.Avialable)
-	{
-		char connectErr[48] = "";
-		sprintf(connectErr, "No WiFi connections found for %s!", appSettings.WifiSettings.SSID);
-		#ifdef SERIAL_LOGGING
-		Serial.println(connectErr);
-		#endif
-		displayMain.fillScreen(ERROR_COLOR);
-		displayMain.drawString(connectErr, 400, 240, TEXT_CENTER_MIDDLE, BLACK, ERROR_COLOR);
-		return false;
-	}
-
-	WiFi.setSleep(false);
-	WiFi.begin(appSettings.WifiSettings.SSID, appSettings.WifiSettings.Password);
-    displayMain.printLine(infoMsg);
-	#ifdef SERIAL_LOGGING
-	Serial.println(infoMsg);
-	#endif
-
-	uint8_t attempts = 0;
-	uint8_t attemptMax = 3;
-	while (WiFi.status() != WL_CONNECTED && attempts < attemptMax)
-	{
-		delay(1000);
-        //display.print('.');
-        //display.display();
-		#ifdef SERIAL_LOGGING
-		Serial.print('.');
-		#endif
-		++attempts;
-	}
-    //display.println();
-    //display.display();
-	#ifdef SERIAL_LOGGING
-	Serial.println();
-	#endif
-
-	uint8_t retry = 0;
-	while(WiFi.status() != WL_CONNECTED)
-	{
-		if (retry < retries)
-		{
-			connectToWiFi(0);
-			++retry;
-		}
-		else
-		{
-			return false;
-		}
-		
-	}
-
-	return true;
-}
-
-void configureWiFi()
-{
-	String intialMsg = "Intializing WiFi module.";
-    displayMain.clearDisplay();
-    displayMain.printLine(intialMsg);
-	#ifdef SERIAL_LOGGING
-	Serial.println(intialMsg);
-	#endif
-
-	WiFi.mode(WIFI_MODE_STA);
-	delay(1000);
-	WiFi.disconnect();
-	WiFi.setAutoConnect(true);
-
-	if (WiFi.status() == WL_NO_SHIELD)
-	{
-		String initialErr = "Communication with WiFi module failed!";
-        displayMain.printLine(initialErr);
-		#ifdef SERIAL_LOGGING
-		Serial.println(initialErr);
-		#endif
-		// don't continue
-		while (true)
-			;
-	}
-
-	if (!connectToWiFi(2))
-	{
-		// don't continue
-		while (true)
-			;
-	}
-		
-	printConnectInfo();
-	delay(2000);
-}

@@ -33,6 +33,7 @@ class DisplayMain : public DisplayControl
         void clearDisplay();
         void updateMositureMeter(SensorData* sensorData, bool forceUpdate = false);
         void drawWiFiSignal(int16_t x, int16_t y, int16_t size, uint16_t backgroundColor = UINT16_MAX);
+        void printWiFiInfo();
 };
 
 #endif
