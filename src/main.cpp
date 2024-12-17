@@ -20,6 +20,7 @@
 #include <Wire.h>
 #include <WiFi.h>
 
+#include "UserSettings.h"
 #include "DisplayMain.h"
 #include "SensorData.h"
 
