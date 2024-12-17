@@ -7,16 +7,16 @@
 #include <Arduino_GFX_Library.h>
 #include <XPT2046_Bitbang.h>
 
-#define TFT_CS 10 // 10 or 34 (FSPI CS0)
+#define TFT_CS 42 // 10 or 34 (FSPI CS0)
 #define TFT_RST 41 // 6
-#define TFT_DC 42 // 7
-#define TFT_MOSI 11 // 11 or 35 (FSPI D) T_DIN
-#define TFT_SCLK 12 // 12 or 36 (FSPI CLK) T_CLK
-#define TFT_MISO 13 // 13 or 37 (FSPI Q) T_DO
-#define TCH_MOSI 35 // 11 or 35 (FSPI D) T_DIN
-#define TCH_SCLK 36 // 12 or 36 (FSPI CLK) T_CLK
-#define TCH_MISO 37 // 13 or 37 (FSPI Q) T_DO
-#define TCH_CS 47 // T_CS
+#define TFT_DC 40 // 7
+#define TFT_MOSI 35 // 11 or 35 (FSPI D) T_DIN
+#define TFT_SCLK 36 // 12 or 36 (FSPI CLK) T_CLK
+#define TFT_MISO 37 // 13 or 37 (FSPI Q) T_DO
+#define TCH_MOSI 11 // 11 or 35 (FSPI D) T_DIN
+#define TCH_SCLK 12 // 12 or 36 (FSPI CLK) T_CLK
+#define TCH_MISO 13 // 13 or 37 (FSPI Q) T_DO
+#define TCH_CS 10 // T_CS
 #define TCH_IRQ 9 // T_IRQ
 // Use pins in range 0-31
 
