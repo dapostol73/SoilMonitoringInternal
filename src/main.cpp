@@ -20,11 +20,10 @@
 #include <Wire.h>
 #include <WiFi.h>
 
-#include "ApplicationSettings.h"
 #include "DisplayMain.h"
 #include "SensorData.h"
 
-//#define SERIAL_LOGGING
+#define SERIAL_LOGGING
 #ifndef SERIAL_LOGGING
 // disable Serial output
 #define Serial KillDefaultSerial
@@ -40,6 +39,7 @@ public:
 #define SERIAL_BAUD_RATE 115200
 
 ApplicationSettings appSettings; //change to pointer
+NetworkManager netManager;
 DisplayMain displayMain;
 
 const uint8_t SENSORS_COUNT = 8;
@@ -64,7 +64,7 @@ void setup()
 	#ifdef SERIAL_LOGGING
 		while(!Serial);
 	#endif
-	
+
     // initialize digital pin PB2 as an output.
     pinMode(BUILTIN_LED, OUTPUT);
 
