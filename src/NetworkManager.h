@@ -5,21 +5,20 @@
 #include <WiFi.h>
 
 #include "ApplicationSettings.h"
+#include "SensorData.h"
 
 class NetworkManager
 {
     private:
-        WiFiConnection wiFiConnection;
-        ApplicationSettings* appSettings;
-        uint16_t numOfSettings = 0;
-
-        void scanWiFiSettings();
+        WiFiClient wiFiClient;
 
     public:
         NetworkManager();
-        bool init(ApplicationSettings* aSettings, uint16_t nSettings);
-        bool connectWiFi(uint16_t retryAttempts = 2, uint16_t retryDelay = 20);
+        bool init();
         bool isConnected();
+        int scanSettingsID(ApplicationSettings* aSettings, uint16_t nSettings);
+        bool connectWiFi(WiFiConnection wiFiConnection, uint16_t retryAttempts = 2, uint16_t retryDelay = 20);
+        void uploadSensorData(ThingSpeakInfo* thingSpeakInfo, SensorData* sensorData, uint16_t sensorCount);
 };
 
 #endif

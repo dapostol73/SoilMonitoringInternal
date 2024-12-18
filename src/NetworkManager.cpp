@@ -5,11 +5,8 @@ NetworkManager::NetworkManager()
 {
 }
 
-bool NetworkManager::init(ApplicationSettings* aSettings, uint16_t nSettings)
-{
-    appSettings = aSettings;
-    numOfSettings = nSettings;
-    
+bool NetworkManager::init()
+{    
 	#ifdef SERIAL_LOGGING
     String intialMsg = "Intializing WiFi module.";
 	Serial.println(intialMsg);
@@ -33,18 +30,70 @@ bool NetworkManager::init(ApplicationSettings* aSettings, uint16_t nSettings)
 	return true;
 }
 
-/// @brief 
-/// @param retryAttempts number of reconnect attempts if failed
-/// @param retryDelay in seconds
-/// @return 
-bool NetworkManager::connectWiFi(uint16_t retryAttempts, uint16_t retryDelay)
+bool NetworkManager::isConnected()
+{
+	return WiFi.isConnected();
+}
+
+int NetworkManager::scanSettingsID(ApplicationSettings* appSettings, uint16_t numOfSettings)
 {
 	#ifdef SERIAL_LOGGING
 	String scanMsg = "Scanning for WiFi SSID.";
 	Serial.println(scanMsg);
 	#endif
-	scanWiFiSettings();
-    
+	uint8_t id = 0;
+	int8_t numNetworks = WiFi.scanNetworks();
+	#ifdef SERIAL_LOGGING
+	Serial.println("Number of networks found: " + String(numNetworks));
+	#endif
+
+	if (numNetworks == 0)
+	{
+		delay(2500);
+		numNetworks = WiFi.scanNetworks();
+	}
+
+	for (uint8_t i=0; i<numNetworks; i++)
+	{
+		String ssid = WiFi.SSID(i);
+		#ifdef SERIAL_LOGGING
+		Serial.println(ssid + " (" + String(WiFi.RSSI(i)) + ")");
+		#endif
+		for (uint8_t j=0; j < numOfSettings; j++)
+		{
+			const char* appSsid = appSettings[j].WifiSettings.SSID;
+			#ifdef SERIAL_LOGGING
+			Serial.println("Checking: " + String(appSsid));
+			#endif
+			if (strcasecmp(appSsid, ssid.c_str()) == 0)
+			{
+				#ifdef SERIAL_LOGGING
+				Serial.println("Found: " + String(ssid));
+				#endif
+				appSettings[j].WifiSettings.Avialable = true;
+				appSettings[j].WifiSettings.Strength = WiFi.RSSI(i);
+
+				if (appSettings[j].WifiSettings.Strength > appSettings[id].WifiSettings.Strength)
+				{
+					id = j;
+				}
+			}
+		}
+	}
+
+	#ifdef SERIAL_LOGGING
+	Serial.println("Using WiFi " + String(appSettings[id].WifiSettings.SSID));
+	#endif
+	WiFi.disconnect();
+	return id;
+}
+
+/// @brief 
+/// @param retryAttempts number of reconnect attempts if failed
+/// @param retryDelay in seconds
+/// @return 
+bool NetworkManager::connectWiFi(WiFiConnection wiFiConnection, uint16_t retryAttempts, uint16_t retryDelay)
+{    
 	if (!wiFiConnection.Avialable)
 	{
 		#ifdef SERIAL_LOGGING
@@ -86,7 +135,7 @@ bool NetworkManager::connectWiFi(uint16_t retryAttempts, uint16_t retryDelay)
 		if (retry < retryAttempts)
 		{
 			delay(1000L*retryDelay);
-			connectWiFi(0, retryDelay);
+			connectWiFi(wiFiConnection, 0, retryDelay);
 			++retry;
 		}
 		else
@@ -99,54 +148,42 @@ bool NetworkManager::connectWiFi(uint16_t retryAttempts, uint16_t retryDelay)
 	return true;
 }
 
-bool NetworkManager::isConnected()
+void NetworkManager::uploadSensorData(ThingSpeakInfo* thingSpeakInfo, SensorData* sensorData, uint16_t sensorCount)
 {
-	return WiFi.isConnected();
-}
-
-void NetworkManager::scanWiFiSettings()
-{
-	int8_t numNetworks = WiFi.scanNetworks();
-	#ifdef SERIAL_LOGGING
-	Serial.println("Number of networks found: " + String(numNetworks));
-	#endif
-
-	if (numNetworks == 0)
+	if(!wiFiClient.connect(thingSpeakInfo->Host, thingSpeakInfo->Port))
 	{
-		delay(2500);
-		numNetworks = WiFi.scanNetworks();
-	}
-
-	for (uint8_t i=0; i<numNetworks; i++)
-	{
-		String ssid = WiFi.SSID(i);
 		#ifdef SERIAL_LOGGING
-		Serial.println(ssid + " (" + String(WiFi.RSSI(i)) + ")");
+		Serial.println("Connection to thinkspeak.com failed");
 		#endif
-		for (uint8_t j=0; j < numOfSettings; j++)
-		{
-			const char* appSsid = appSettings[j].WifiSettings.SSID;
-			#ifdef SERIAL_LOGGING
-			Serial.println("Checking: " + String(appSsid));
-			#endif
-			if (strcasecmp(appSsid, ssid.c_str()) == 0)
-			{
-				#ifdef SERIAL_LOGGING
-				Serial.println("Found: " + String(ssid));
-				#endif
-				appSettings[j].WifiSettings.Avialable = true;
-				appSettings[j].WifiSettings.Strength = WiFi.RSSI(i);
+		return;
+	}
 
-				if (appSettings[j].WifiSettings.Strength > wiFiConnection.Strength)
-				{
-					wiFiConnection = appSettings[j].WifiSettings;
-				}
-			}
-		}
+	char fieldData[128] = "";
+    for (uint16_t i = 0; i < sensorCount; i++)
+    {
+		sprintf(fieldData, "%s&field%d=%d", fieldData, sensorData[i].Index+1, sensorData[i].CurrentValue);        
+    }
+
+	#ifdef SERIAL_LOGGING
+	Serial.print("FieldData: ");
+	Serial.println(fieldData);
+	#endif
+
+	// Three values(field1 field2 field3 field4) have been set in thingspeak.com 
+	wiFiClient.print(String("GET ") + "/update?api_key=" 
+				+ thingSpeakInfo->APIKeyWrite
+				+ fieldData
+				+ " HTTP/1.1\r\n" 
+				+ "Host: " + thingSpeakInfo->Host + "\r\n" 
+				+ "Connection: close\r\n\r\n");
+
+	while(wiFiClient.available())
+	{
+		String line = wiFiClient.readStringUntil('\r');
+		Serial.print(line);
 	}
 
 	#ifdef SERIAL_LOGGING
-	Serial.println("Using WiFi " + String(appSettings.WifiSettings.SSID));
+	Serial.println("Updated ThingSpeak");
 	#endif
-	WiFi.disconnect();
 }

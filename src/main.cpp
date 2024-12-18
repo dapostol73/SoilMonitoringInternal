@@ -1,21 +1,11 @@
 
-/*********************************************************************
-  This is an example for our Monochrome OLEDs based on SH110X drivers
-
-  This example is for a 128x64 size display using I2C to communicate
-  3 pins are required to interface (2 I2C and one reset)
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada  for Adafruit Industries.
-  BSD license, check license.txt for more information
-  All text above, and the splash screen must be included in any redistribution
-
-  i2c SH1106 modified by Rupert Hirst  12/09/21
-*********************************************************************/
-
+//*****************************************************************************
+// Copyright (c) 2014 A12 Studios Inc. and Demetrius Apostolopoulos.
+// All rights reserved.
+//
+// If Serial Logging support is required add this build flag to platformio.ini
+//   build_flags = -D SERIAL_LOGGING
+//*****************************************************************************
 #include <Arduino.h>
 #include <Wire.h>
 #include <WiFi.h>
@@ -25,7 +15,6 @@
 #include "DisplayMain.h"
 #include "SensorData.h"
 
-#define SERIAL_LOGGING
 #ifndef SERIAL_LOGGING
 // disable Serial output
 #define Serial KillDefaultSerial
@@ -46,9 +35,11 @@ DisplayMain displayMain;
 
 const uint8_t SENSORS_COUNT = 8;
 const uint16_t SENSORS_UPDATE_SECS = 1; // Sensor query every minute
+const uint16_t SENSORS_UPLOAD_SECS = 5; // Sensor query every minute
 const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 };
 SensorData sensorData[SENSORS_COUNT];
 long sensorTimeLastUpdate = LONG_MIN;
+long sensorTimeLastUpload = LONG_MIN;
 
 const uint16_t WIFI_UPDATE_SECS = 120; // wait 2 minutes to reconnect
 long wiFiTimeLastUpdate = LONG_MIN;
@@ -69,8 +60,10 @@ void setup()
 
     delay(250); // wait for the OLED to power up
     displayMain.init();
-	netManager.init(AppSettings, AppSettingsCount);
-	netManager.connectWiFi();
+	netManager.init();
+    uint8_t appSetID = netManager.scanSettingsID(AppSettings, AppSettingsCount);
+    appSettings = AppSettings[appSetID];
+	netManager.connectWiFi(appSettings.WifiSettings);
 	displayMain.printWiFiInfo();
     wiFiTimeLastUpdate = millis();
 	configureSensors();
@@ -85,17 +78,32 @@ void loop()
         #ifdef SERIAL_LOGGING
         Serial.println("Attempting to connect to WiFi");
         #endif
-		netManager.connectWiFi();
+		if (!netManager.connectWiFi(appSettings.WifiSettings));
+        {
+            //If a connection failed, rescan for new settings.
+            uint8_t appSetID = netManager.scanSettingsID(AppSettings, AppSettingsCount);
+            appSettings = AppSettings[appSetID];
+        }
         wiFiTimeLastUpdate = millis();
     }
 
     if (millis() - sensorTimeLastUpdate > (1000L*SENSORS_UPDATE_SECS))
     {
         #ifdef SERIAL_LOGGING
-        Serial.println("Setting updating Sensor data.");
+        Serial.println("Updating Sensor data.");
         #endif
         updateSensors();
         sensorTimeLastUpdate = millis();
+    }
+
+    if (millis() - sensorTimeLastUpload > (1000L*SENSORS_UPLOAD_SECS))
+    {
+        #ifdef SERIAL_LOGGING
+        Serial.println("Uploading Sensor data to ThinkSpeak.");
+        #endif
+        netManager.uploadSensorData(&appSettings.ThingSpeakSettings, sensorData, SENSORS_COUNT);
+        sensorTimeLastUpload = millis();
+        blinkLed(4, 100);
     }
 
     TouchPoint touch = displayMain.DisplayTouch->getTouch();
