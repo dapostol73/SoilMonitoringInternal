@@ -14,6 +14,7 @@
 #include "NetworkManager.h"
 #include "DisplayMain.h"
 #include "SensorData.h"
+#include "PixelControl.h"
 
 #ifndef SERIAL_LOGGING
 // disable Serial output
@@ -26,16 +27,16 @@ public:
 } Serial;
 #endif
 
-#define MS_SENSOR0 A3
 #define SERIAL_BAUD_RATE 115200
 
 ApplicationSettings appSettings; //change to pointer
 NetworkManager netManager;
 DisplayMain displayMain;
+PixelControl pixelControl;
 
 const uint8_t SENSORS_COUNT = 8;
-const uint16_t SENSORS_UPDATE_SECS = 1; // Sensor query every minute
-const uint16_t SENSORS_UPLOAD_SECS = 5; // Sensor query every minute
+const uint16_t SENSORS_UPDATE_SECS = 1; // Sensor query every second
+const uint16_t SENSORS_UPLOAD_SECS = 300; // Sensor query every 5 minute
 const uint8_t sensorPins[SENSORS_COUNT] = { A3, A4, A5, A6, A14, A15, A16, A17 };
 SensorData sensorData[SENSORS_COUNT];
 long sensorTimeLastUpdate = LONG_MIN;
@@ -44,7 +45,6 @@ long sensorTimeLastUpload = LONG_MIN;
 const uint16_t WIFI_UPDATE_SECS = 120; // wait 2 minutes to reconnect
 long wiFiTimeLastUpdate = LONG_MIN;
 
-void blinkLed(uint8_t times, uint8_t interval);
 void configureSensors();
 void updateSensors();
 
@@ -55,19 +55,15 @@ void setup()
 		while(!Serial);
 	#endif
 
-    // initialize digital pin PB2 as an output.
-    pinMode(BUILTIN_LED, OUTPUT);
-
-    delay(250); // wait for the OLED to power up
     displayMain.init();
-	netManager.init();
+	pixelControl.init();
+    netManager.init();
     uint8_t appSetID = netManager.scanSettingsID(AppSettings, AppSettingsCount);
     appSettings = AppSettings[appSetID];
 	netManager.connectWiFi(appSettings.WifiSettings);
 	displayMain.printWiFiInfo();
     wiFiTimeLastUpdate = millis();
 	configureSensors();
-	blinkLed(3, 250);	
 	Serial.println("Setup complete!");
 }
 
@@ -103,7 +99,7 @@ void loop()
         #endif
         netManager.uploadSensorData(&appSettings.ThingSpeakSettings, sensorData, SENSORS_COUNT);
         sensorTimeLastUpload = millis();
-        blinkLed(4, 100);
+        pixelControl.blinkBlue(4, 100);
     }
 
     TouchPoint touch = displayMain.DisplayTouch->getTouch();
@@ -145,17 +141,6 @@ void updateSensors()
     {
         sensorData[i].readValue();
         displayMain.updateMositureMeter(&sensorData[i]);
-    }
-}
-
-void blinkLed(uint8_t times, uint8_t interval)
-{
-    for (uint8_t i = 0; i < times; i++)
-    {
-        digitalWrite(BUILTIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-        delay(interval);               // wait for 100mS
-        digitalWrite(BUILTIN_LED, LOW);    // turn the LED off by making the voltage LOW
-        delay(interval);               // wait for 100mS
     }
 }
 
