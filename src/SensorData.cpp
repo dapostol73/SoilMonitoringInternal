@@ -24,7 +24,15 @@ void SensorData::readValue()
     int mois = analogRead(Pin);
     Connected = mois > 1000;
     PreviousValue = CurrentValue;
-    CurrentValue = map(clamp(mois, MinValue, MaxValue), MinValue, MaxValue, 100, 0);
+    if (Connected)
+    {
+        CurrentValue = map(clamp(mois, MinValue, MaxValue), MinValue, MaxValue, 100, 0);
+    }
+    else
+    {
+        CurrentValue = 0;
+    }
+    
 
     #ifdef SERIAL_LOGGING
     char info[48] = "";
@@ -40,7 +48,7 @@ void SensorData::readValue()
     {
         strcpy(info, "Soil is HUMID"); 
     }
-    else if(mois >= 50)
+    else if(mois >= 750)
     {
         strcpy(info, "Sensor in WATER");
     }
@@ -51,5 +59,5 @@ void SensorData::readValue()
     Serial.println(info);
     sprintf(info, "Value: %d", mois);
     Serial.println(info);
-    #endif  
+    #endif
 }
