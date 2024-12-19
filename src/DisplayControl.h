@@ -16,7 +16,7 @@
 #define TCH_MOSI 11 // 11 or 35 (FSPI D) T_DIN
 #define TCH_SCLK 12 // 12 or 36 (FSPI CLK) T_CLK
 #define TCH_MISO 13 // 13 or 37 (FSPI Q) T_DO
-#define TCH_CS 46 // T_CS
+#define TCH_CS 10 // T_CS
 #define TCH_IRQ 9 // T_IRQ
 // Use pins in range 0-31
 

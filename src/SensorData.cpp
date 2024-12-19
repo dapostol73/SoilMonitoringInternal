@@ -33,7 +33,6 @@ void SensorData::readValue()
         CurrentValue = 0;
     }
     
-
     #ifdef SERIAL_LOGGING
     char info[48] = "";
     if(mois >= 4000)
