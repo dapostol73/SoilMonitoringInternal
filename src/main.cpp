@@ -51,30 +51,30 @@ void updateSensors();
 void setup()
 {
     Serial.begin(SERIAL_BAUD_RATE);
-	#ifdef SERIAL_LOGGING
-		while(!Serial);
-	#endif
+    #ifdef SERIAL_LOGGING
+        while(!Serial);
+    #endif
 
     displayMain.init();
-	pixelControl.init();
+    pixelControl.init();
     netManager.init();
     uint8_t appSetID = netManager.scanSettingsID(AppSettings, AppSettingsCount);
     appSettings = AppSettings[appSetID];
-	netManager.connectWiFi(appSettings.WifiSettings);
-	displayMain.printWiFiInfo();
+    netManager.connectWiFi(appSettings.WifiSettings);
+    displayMain.printWiFiInfo();
     wiFiTimeLastUpdate = millis();
-	configureSensors();
-	Serial.println("Setup complete!");
+    configureSensors();
+    Serial.println("Setup complete!");
 }
 
 void loop()
 {
-	if (!netManager.isConnected() && millis() - wiFiTimeLastUpdate > (1000L*WIFI_UPDATE_SECS))
+    if (!netManager.isConnected() && millis() - wiFiTimeLastUpdate > (1000L*WIFI_UPDATE_SECS))
     {
         #ifdef SERIAL_LOGGING
         Serial.println("Attempting to connect to WiFi");
         #endif
-		if (!netManager.connectWiFi(appSettings.WifiSettings));
+        if (!netManager.connectWiFi(appSettings.WifiSettings));
         {
             //If a connection failed, rescan for new settings.
             uint8_t appSetID = netManager.scanSettingsID(AppSettings, AppSettingsCount);
@@ -104,8 +104,8 @@ void loop()
 
     TouchPoint touch = displayMain.DisplayTouch->getTouch();
 
-	// Display touches that have a pressure value (Z)
-	if (touch.zRaw != 0)
+    // Display touches that have a pressure value (Z)
+    if (touch.zRaw != 0)
     {
         #ifdef SERIAL_LOGGING
         Serial.print("Touch at X: ");
@@ -117,12 +117,12 @@ void loop()
         sprintf(info, "Last Touch at X: %d Y: %d", touch.x, touch.y);
         displayMain.DisplayGFX->fillRect(0, 0, 480, 32, BACKGROUND_COLOR);
         displayMain.drawString(info, 4, 4, TEXT_LEFT_TOP, TEXT_MAIN_COLOR);
-		//uint16_t x = clamp(touch.x, 5, 475);
-		//uint16_t y = clamp(touch.y, 5, 315);
-		//displayMain.DisplayGFX->fillCircle(x, y, 4, GREEN);
+        //uint16_t x = clamp(touch.x, 5, 475);
+        //uint16_t y = clamp(touch.y, 5, 315);
+        //displayMain.DisplayGFX->fillCircle(x, y, 4, GREEN);
     }
 
-	displayMain.drawWiFiSignal(452, 4, 2);
+    displayMain.drawWiFiSignal(452, 4, 2);
 }
 
 void configureSensors()
@@ -130,7 +130,7 @@ void configureSensors()
     uint16_t w = 60;
     for (uint16_t i = 0; i < SENSORS_COUNT; i++)
     {
-		sensorData[i].init(sensorPins[i], i, (i * w), 32);
+        sensorData[i].init(sensorPins[i], i, (i * w), 32);
         displayMain.updateMositureMeter(&sensorData[i], true);
     }
 }
