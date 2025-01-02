@@ -138,14 +138,9 @@ bool NetworkManager::connectWiFi(WiFiConnection wiFiConnection, uint16_t retryAt
 			connectWiFi(wiFiConnection, 0, retryDelay);
 			++retry;
 		}
-		else
-		{
-			return false;
-		}
-		
 	}
 
-	return true;
+	return isConnected();
 }
 
 void NetworkManager::uploadSensorData(ThingSpeakInfo* thingSpeakInfo, SensorData* sensorData, uint16_t sensorCount)
